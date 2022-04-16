@@ -1,4 +1,6 @@
 import * as cardRepository from "../repositories/cardRepository.js";
+import * as paymentRepository from "../repositories/paymentRepository.js";
+import * as rechargesRepository from "../repositories/rechargeRepository.js";
 import { findByApiKey } from "../repositories/companyRepository.js";
 import { findById } from "../repositories/employeeRepository.js";
 import { faker } from "@faker-js/faker";
@@ -72,4 +74,26 @@ export async function activate(id: number, CVC: string, password: string) {
 
 	const hashPassword = bcrypt.hashSync(password, 8)
     await cardRepository.update(id, { password: hashPassword })
+}
+
+export async function balance(id: number) {
+	const card = await cardRepository.findById(id);
+	if (!card) throw { type: 'nonexistent card', message: 'The card is not registered' }
+
+	const transactions = await paymentRepository.findByCardId(id);
+	const recharges =  await rechargesRepository.findByCardId(id);
+
+	const transactionsTotal = transactions
+		.map(transaction => transaction.amount)
+		.reduce((curr: number, sum: number) => curr + sum, 0);
+	
+	const rechargesTotal = recharges
+		.map((recharge) => recharge.amount)
+		.reduce((curr: number, sum: number) => curr + sum, 0);
+	
+	return {
+		balance: rechargesTotal - transactionsTotal,
+		transactions,
+		recharges
+	}
 }

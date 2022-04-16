@@ -16,9 +16,18 @@ export async function createCard(req: Request, res: Response) {
 }
 
 export async function activateCard(req: Request, res: Response) {
-    const { id, CVC, password } = req.body; 
+    const { id } = req.params;
+    const { CVC, password } = req.body; 
 
-    await cardsServices.activate(id, CVC, password);
+    await cardsServices.activate(parseInt(id), CVC, password);
 
     res.sendStatus(200);
+}
+
+export async function cardBalance(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const balance = await cardsServices.balance(parseInt(id))
+
+    res.send(balance).status(200);
 }
