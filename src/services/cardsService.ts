@@ -70,5 +70,6 @@ export async function activate(id: number, CVC: string, password: string) {
 
     if (!bcrypt.compareSync(CVC, card.securityCode)) throw { type: 'incorrect CVC', message: 'Incorrect CVC' }
 
-    await cardRepository.update(id, { password })
+	const hashPassword = bcrypt.hashSync(password, 8)
+    await cardRepository.update(id, { password: hashPassword })
 }
