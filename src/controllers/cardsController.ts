@@ -10,7 +10,15 @@ export async function createCard(req: Request, res: Response) {
 
     if (!apiKey) { throw { type: "invalid key", message: "Invalid api key"} }
 
-    const cardCVV = await cardsServices.create(id, cardType, apiKey);
+    const cardCVC = await cardsServices.create(id, cardType, apiKey);
 
-    res.send(cardCVV).status(201);
+    res.send(cardCVC).status(201);
+}
+
+export async function activateCard(req: Request, res: Response) {
+    const { id, CVC, password } = req.body; 
+
+    await cardsServices.activate(id, CVC, password);
+
+    res.sendStatus(200);
 }

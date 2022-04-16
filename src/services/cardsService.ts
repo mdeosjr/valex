@@ -7,15 +7,15 @@ import bcrypt from "bcrypt";
 
 export async function create(id: number, type: cardRepository.TransactionTypes, apiKey: string) {
     const company = await findByApiKey(apiKey);
-    if (!company) { throw { type: 'invalid key', message: 'Invalid api key' } }
+    if (!company) throw { type: 'invalid company', message: 'Company does not exist' } 
 
     const employee = await findById(id);
-    if (!employee) { throw { type: 'invalid key', message: 'Invalid api key' } }
+    if (!employee) throw { type: 'invalid employee', message: 'Employee does not exist' } 
 
-    const employeeCard = await cardRepository.findByTypeAndEmployeeId(type, id)
-    if (employeeCard) { throw { type: 'invalid key', message: 'Invalid api key' } }
+    const employeeCard = await cardRepository.findByTypeAndEmployeeId(type, id);
+    if (employeeCard) throw { type: 'existent card', message: 'The user already has a card of this type' } 
 
-    const { cardInfo, securityCode } = generateCardInfo(employee.fullName, employee.id, type)
+    const { cardInfo, securityCode } = generateCardInfo(employee.fullName, employee.id, type);
 
     await cardRepository.insert(cardInfo);
     return { securityCode };
@@ -58,4 +58,17 @@ function createCardholderName(nameArray: string[]) {
 	}
 
 	return nameArray.join(' ');
+}
+
+export async function activate(id: number, CVC: string, password: string) {
+    const card = await cardRepository.findById(id);
+    if (!card) throw { type: 'nonexistent card', message: 'The card is not registered' }
+
+    if (dayjs().format('MM/YY') > card.expirationDate) throw { type: 'expired card', message: 'The card is expired' } 
+
+    if (card.password !== null) throw { type: 'activated card', message: 'The card is already activated' }
+
+    if (!bcrypt.compareSync(CVC, card.securityCode)) throw { type: 'incorrect CVC', message: 'Incorrect CVC' }
+
+    await cardRepository.update(id, { password })
 }
