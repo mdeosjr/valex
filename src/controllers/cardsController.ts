@@ -27,7 +27,7 @@ export async function activateCard(req: Request, res: Response) {
 export async function cardBalance(req: Request, res: Response) {
     const { id } = req.params;
 
-    const balance = await cardsServices.balance(parseInt(id))
+    const balance = await cardsServices.totalBalance(parseInt(id))
 
     res.send(balance).status(200);
 }

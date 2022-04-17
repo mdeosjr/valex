@@ -76,7 +76,7 @@ export async function activate(id: number, CVC: string, password: string) {
     await cardRepository.update(id, { password: hashPassword })
 }
 
-export async function balance(id: number) {
+export async function totalBalance(id: number) {
 	const card = await cardRepository.findById(id);
 	if (!card) throw { type: 'nonexistent card', message: 'The card is not registered' }
 
