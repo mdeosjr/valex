@@ -1,15 +1,14 @@
 import * as cardRepository from "../repositories/cardRepository.js";
 import * as paymentRepository from "../repositories/paymentRepository.js";
 import * as rechargesRepository from "../repositories/rechargeRepository.js";
-import { findByApiKey } from "../repositories/companyRepository.js";
+import * as validations from "../utils/cardsValidations.js";
 import { findById } from "../repositories/employeeRepository.js";
 import { faker } from "@faker-js/faker";
 import dayjs from "dayjs";
 import bcrypt from "bcrypt";
 
 export async function create(id: number, type: cardRepository.TransactionTypes, apiKey: string) {
-    const company = await findByApiKey(apiKey);
-    if (!company) throw { type: 'invalid company', message: 'Company does not exist' } 
+    await validations.validateCompany(apiKey);
 
     const employee = await findById(id);
     if (!employee) throw { type: 'invalid employee', message: 'Employee does not exist' } 
@@ -63,37 +62,32 @@ function createCardholderName(nameArray: string[]) {
 }
 
 export async function activate(id: number, CVC: string, password: string) {
-    const card = await cardRepository.findById(id);
-    if (!card) throw { type: 'nonexistent card', message: 'The card is not registered' }
-
-    if (dayjs().format('MM/YY') > card.expirationDate) throw { type: 'expired card', message: 'The card is expired' } 
-
-    if (card.password !== null) throw { type: 'activated card', message: 'The card is already activated' }
-
-    if (!bcrypt.compareSync(CVC, card.securityCode)) throw { type: 'incorrect CVC', message: 'Incorrect CVC' }
+    await validations.validateActivation(id, CVC);
 
 	const hashPassword = bcrypt.hashSync(password, 8)
     await cardRepository.update(id, { password: hashPassword })
 }
 
 export async function totalBalance(id: number) {
-	const card = await cardRepository.findById(id);
-	if (!card) throw { type: 'nonexistent card', message: 'The card is not registered' }
+	await validations.validateCard(id);
 
 	const transactions = await paymentRepository.findByCardId(id);
 	const recharges =  await rechargesRepository.findByCardId(id);
 
-	const transactionsTotal = transactions
-		.map(transaction => transaction.amount)
-		.reduce((curr: number, sum: number) => curr + sum, 0);
-	
-	const rechargesTotal = recharges
-		.map((recharge) => recharge.amount)
-		.reduce((curr: number, sum: number) => curr + sum, 0);
+	const transactionsTotal = generateTotal(transactions);
+	const rechargesTotal = generateTotal(recharges);
 	
 	return {
 		balance: rechargesTotal - transactionsTotal,
 		transactions,
 		recharges
 	}
+}
+
+function generateTotal(movementsArray: any[]) {
+	const movementsTotal = movementsArray
+		.map((movement) => movement.amount)
+		.reduce((curr: number, sum: number) => curr + sum, 0);
+
+	return movementsTotal
 }

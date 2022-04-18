@@ -5,9 +5,9 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"dev": "nodemon src/index.ts",
-		"build": "npx tsc",
+		"build": "tsc",
 		"start": "node build/index.js",
+		"dev": "nodemon src/index.ts",
 		"stop": "fuser -k 5000/tcp"
 	},
 	"keywords": [],
